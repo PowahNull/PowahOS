@@ -14,10 +14,12 @@ There are 4 types of computers with different functions (using AE2 as comparison
 - Master computer: A singular computer manages item requests and all slave computers (similar to ME controller)\
 
 ## Installation
-format: REPO PROGRAM -> COMPUTER PROGRAM // Usage\
+**format: REPO PROGRAM -> COMPUTER PROGRAM // Usage**\
 you should use wget or pastebin to copy paste code easily into a computer\
+**this should be done after wiring up everything**\
+**A tutorial will be made on youtube**
 
-STEP 1: INSTALL MASTER COMPUTER PROGRAMS:
+**STEP 1: INSTALL MASTER COMPUTER PROGRAMS:**
 
 master_init.lua -> /master_init.lua // Initialise master computer, establish handshake with slave networks and start accepting requests (main program)\
 master_request.lua -> /master_request.lua // Module for accepting requests\
@@ -25,6 +27,17 @@ master_find.lua -> /master_find.lua // Module for finding items\
 master_list.lua -> /master_list.lua // Module for listing items\
 master_reboot.lua -> /master_reboot.lua // Module for rebooting slaves\
 
-STEP 2: SLAVES CONFIG:
+**STEP 2: SLAVES CONFIG IN MASTER COMPUTER:**\
+edit slaves.json -> /slaves.json\
+this step is important for computers to recognize a slave's connected storage and packager.\
 
-edit slaves.json -> /slaves.json
+**STEP 3: INSTALL SLAVE PROGRAMS:**\
+slave_startup.lua -> /startup.lua // Immediately initialise a slave's function on startup\
+edit /startup.lua to match correct interface and orientation\
+
+**STEP 4: INSTALL INTERFACE COMPUTER PROGRAMS**
+interface_get -> /get.lua // Program for obtaining items\
+interface_find -> /find.lua // Program for finding items\
+interface_list -> /list.lua // Program for listing items\
+
+**STEP 5 (OPTIONAL) INSTALL REQUEST COMPUTERS**\
