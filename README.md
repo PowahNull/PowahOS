@@ -42,3 +42,9 @@ interface_find -> /find.lua // Program for finding items\
 interface_list -> /list.lua // Program for listing items
 
 **STEP 5 (OPTIONAL) INSTALL REQUEST COMPUTERS**
+
+**RUNNING THE COMPUTER**
+- run master_reboot to manage operations of slave computers
+- run master_init to inspect network conditions and initialise slave machines
+- run master_main if master_init reveals all system operational
+- use interface computers as needed
