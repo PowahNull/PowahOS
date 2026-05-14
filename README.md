@@ -1,17 +1,17 @@
 # PowahOS
-Tools for CC:Tweaked for inventory management and autocrafting with the help of the create mod (6.0.0)\
+Tools for CC:Tweaked for inventory management and autocrafting with the help of the create mod (6.0.0)
 These tools are open source, do whatever modifications in your forks which are necessary to fit into your system
 
 ## Mod versions (depends)
-Create >6.0.0\
+Create >6.0.0
 CC: Tweaked >1.1
 
 ## Equipment
-There are 4 types of computers with different functions (using AE2 as comparison)\
-- Slave computer: Connected to storage inventories (similar to ME drive and ME storage bus)\
-- Request computer: Allows for remote request of packages using Create's logistics network (similar to ME interface)\
-- Interface computer: Interface computer for easy item requests (similar to ME storage terminal)\
-- Master computer: A singular computer manages item requests and all slave computers (similar to ME controller)\
+There are 4 types of computers with different functions (using AE2 as comparison)
+- Slave computer: Connected to storage inventories (similar to ME drive and ME storage bus)
+- Request computer: Allows for remote request of packages using Create's logistics network (similar to ME interface)
+- Interface computer: Interface computer for easy item requests (similar to ME storage terminal)
+- Master computer: A singular computer manages item requests and all slave computers (similar to ME controller)
 
 ## Installation
 **format: REPO PROGRAM -> COMPUTER PROGRAM // Usage**\
