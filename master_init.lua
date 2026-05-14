@@ -18,6 +18,10 @@ do
     SLAVE_DATA_FILE.close()
     SLAVE_TABLE = textutils.unserialiseJSON(SLAVE_JSON)
 
+    if not SLAVE_TABLE then
+        error("SLAVE DATA JSON PARSE FAILURE", 1)
+    end
+
     NUMBER_OF_SLAVES = #SLAVE_TABLE
     SELF_ID = os.getComputerID()
 end
