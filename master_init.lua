@@ -36,7 +36,7 @@ for _, v in pairs(SLAVE_TABLE) do
         status = "HANDSHAKE_TIMEOUT"
     end
 
-    io.write("Slave #%d responded with: ")
+    io.write(string.format("Slave #%d responded with: ", v.slave_id))
     if status == "HANDSHAKE_OK" then
         term.setTextColor(colors.green)
     elseif status == "HANDSHAKE_NOT_OK" then
