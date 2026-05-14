@@ -53,7 +53,7 @@ for _, v in pairs(SLAVE_TABLE) do
         status = "INIT_TIMEOUT"
     end
 
-    io.write(string.format("SLAVE %d RESPONDED WITH: ", v.slave_id)
+    io.write(string.format("SLAVE %d RESPONDED WITH: ", v.slave_id))
     if status == "INIT_OK" then
         term.setTextColor(colors.green)
         response_success = response_success + 1
