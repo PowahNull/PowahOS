@@ -39,16 +39,25 @@ do
 end
 
 -- slave init function (do not yield until master respond)
-do
-    local receive_id, message = rednet.receive("SLAVE_INIT_PROTOCOL")
-    local wrapper = peripheral.wrap(message)
-    if wrapper then
-        PACKAGER = wrapper
-        print("SLAVE INIT PACKAGER SUCCESS, PROCEEDING")
-        rednet.send(receive_id, "INIT_OK", "SLAVE_INIT_PROTOCOL")
-    else
-        error("SLAVE INIT PACKAGER FAILED", 0)
-        rednet.send(receive_id, "INIT_NOT_OK", "SLAVE_INIT_PROTOCOL")
+function init()
+    while true do
+        local receive_id, message = rednet.receive("SLAVE_INIT_PROTOCOL")
+        local wrapper = peripheral.wrap(message)
+
+        if wrapper then
+            if PACKAGER then
+                PACKAGER = wrapper
+                print("SLAVE PACKAGER REINITIALISED, PROCEEDING")
+                rednet.send(receive_id, "INIT_OK", "SLAVE_INIT_PROTOCOL")
+            else
+                PACKAGER = wrapper
+                print("SLAVE INIT PACKAGER SUCCESS, PROCEEDING")
+                rednet.send(receive_id, "INIT_OK", "SLAVE_INIT_PROTOCOL")
+            end
+        else
+            error("SLAVE INIT PACKAGER FAILED", 0)
+            rednet.send(receive_id, "INIT_NOT_OK", "SLAVE_INIT_PROTOCOL")
+        end
     end
 end
 
@@ -139,4 +148,4 @@ function perform()
     end
 end
 
-parallel.waitForAny(listen, perform)
+parallel.waitForAny(init, listen, perform)
