@@ -9,11 +9,9 @@ do
     SLAVE_DATA_FILE = fs.open(SLAVE_CONNECT_PATH, "r")
 
     if type(SLAVE_DATA_FILE) == "nil" then
-        print("ERROR: SLAVE DATA FILE NOT FOUND, EXITING")
-        exit()
+        error("SLAVE DATA FILE NOT FOUND", 0)
     elseif type(SLAVE_DATA_FILE) == "string" then
-        print("ERROR: COULD NOT OPEN FILE, EXITING")
-        exit()
+        error("COULD NOT OPEN FILE", 0)
     end
 
     SLAVE_JSON = SLAVE_DATA_FILE.readAll()
@@ -32,17 +30,15 @@ for i = 1, MAX_ITERATIONS do
         print("PERFORMING NETWORK HANDSHAKE...")
         break
     elseif #computers > NUMBER_OF_SLAVES then
-        print(string.format("EXTRA SLAVE COMPUTERS: %d/%d REGISTERED", #computers, NUMBER_OF_SLAVES))
-        print("EXITING TO AVOID UNEXPECTED BEHAVIOUR")
-        exit()
+        error(string.format("UNEXPECTED SLAVE COMPUTERS: %d/%d REGISTERED", #computers, NUMBER_OF_SLAVES), 0)
     elseif #computers < NUMBER_OF_SLAVES and #computers > 0 then
-        print(string.format("MISSING SLAVE COMPUTER: %d/%d REGISTERED", #computers, NUMBER_OF_SLAVES))
+        warn(string.format("MISSING SLAVE COMPUTER: %d/%d REGISTERED", #computers, NUMBER_OF_SLAVES))
     else
-        print(string.format("NO SLAVE COMPUTERS FOUND: %d/%d REGISTERED", #computers, NUMBER_OF_SLAVES))
+        warn(string.format("NO SLAVE COMPUTERS FOUND: %d/%d REGISTERED", #computers, NUMBER_OF_SLAVES))
     end
 end
 
-local term_width, term_height = term.getSize()
+local term_width, _ = term.getSize()
 print(string.rep("=", term_width))
 
 -- Slave computers handshake
@@ -57,7 +53,7 @@ for _, v in pairs(SLAVE_TABLE) do
         status = "INIT_TIMEOUT"
     end
 
-    io.write(string.format("Slave %d responded with: "))
+    io.write(string.format("SLAVE %d RESPONDED WITH: "))
     if status == "INIT_OK" then
         term.setTextColor(colors.green)
         response_success = response_success + 1
