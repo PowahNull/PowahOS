@@ -21,7 +21,7 @@ you should use wget or pastebin to copy paste code easily into a computer\
 
 **STEP 1: INSTALL MASTER COMPUTER PROGRAMS:**
 
-master_init.lua -> /master_init.lua // Initialise master computer, establish handshake with slave networks and start accepting requests (main program)\
+master_init.lua -> /master_init.lua // Initialise master computer, establish connection and initialise slave computers\
 master_request.lua -> /master_request.lua // Module for accepting requests\
 master_find.lua -> /master_find.lua // Module for finding items\
 master_list.lua -> /master_list.lua // Module for listing items\
