@@ -20,8 +20,7 @@ do
         STORAGE = storage_candidates[1]
         print("FOUND SUITABLE STORAGE INVENTORY, PROCEEDING")
     else
-        print("NO SUITABLE STORAGE INVENTORY FOUND, EXITING")
-        exit()
+        error("NO SUITABLE STORAGE INVENTORY FOUND", 0)
     end
 end
 
@@ -35,8 +34,7 @@ do
         CHEST = chest_candidates[1]
         print("FOUND SUITABLE CHEST INVENTORY, PROCEEDING")
     else
-        print("NO SUITABLE CHEST INVENTORY FOUND, EXITING")
-        exit()
+        error("NO SUITABLE CHEST INVENTORY FOUND", 0)
     end
 end
 
@@ -49,9 +47,8 @@ do
         print("SLAVE INIT PACKAGER SUCCESS, PROCEEDING")
         rednet.send(receive_id, "INIT_OK", "SLAVE_INIT_PROTOCOL")
     else
-        print("SLAVE INIT PACKAGER FAILED, EXITING")
+        error("SLAVE INIT PACKAGER FAILED", 0)
         rednet.send(receive_id, "INIT_NOT_OK", "SLAVE_INIT_PROTOCOL")
-        exit()
     end
 end
 
