@@ -88,7 +88,7 @@ io.write("SLAVE INIT FAILURE: ")
 term.setTextColor(colors.red)
 io.write(string.format("%d/%d (%.1f%%)\n", response_failure, G.NUMBER_OF_SLAVES, response_failure/G.NUMBER_OF_SLAVES))
 if response_success == G.NUMBER_OF_SLAVES then
-    term.setTextColor(colors.lightBlue)
+    term.setTextColor(colors.blue)
     print("ALL SYSTEMS OPERATIONAL")
 end
 term.setTextColor(colors.white)
