@@ -6,18 +6,17 @@ G.MAX_ITERATIONS = 100
 
 -- Read disk content for slaves
 do
-    G.SLAVE_CONNECT_PATH = "disk/slaves.json"
-    G.SLAVE_DATA_FILE = fs.open(G.SLAVE_CONNECT_PATH, "r")
+    local file = fs.open("disk/slaves.json", "r")
 
-    if type(G.SLAVE_DATA_FILE) == "nil" then
+    if type(file) == "nil" then
         error("SLAVE DATA FILE NOT FOUND", 0)
-    elseif type(G.SLAVE_DATA_FILE) == "string" then
+    elseif type(file) == "string" then
         error("COULD NOT OPEN FILE", 0)
     end
 
-    G.SLAVE_JSON = G.SLAVE_DATA_FILE.readAll()
-    G.SLAVE_DATA_FILE.close()
-    G.SLAVE_TABLE = textutils.unserialiseJSON(G.SLAVE_JSON)
+    local json = file.readAll()
+    file.close()
+    G.SLAVE_TABLE = textutils.unserialiseJSON(json)
 
     if not G.SLAVE_TABLE then
         error("SLAVE DATA JSON PARSE FAILURE", 0)
