@@ -37,7 +37,7 @@ this step is important for computers to recognize a slave's connected storage an
 slave_startup.lua -> /startup.lua // Immediately initialise a slave's function on startup\
 edit /startup.lua to match correct interface and orientation
 
-**STEP 4: INSTALL INTERFACE COMPUTER PROGRAMS**
+**STEP 4: INSTALL INTERFACE COMPUTER PROGRAMS**\
 interface_get -> /get.lua // Program for obtaining items\
 interface_find -> /find.lua // Program for finding items\
 interface_list -> /list.lua // Program for listing items
