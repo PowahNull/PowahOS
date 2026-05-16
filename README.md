@@ -12,7 +12,7 @@ There are 4 types of computers with different functions (using AE2 as comparison
 - Request computer: Allows for remote request of packages using Create's logistics network (similar to ME interface)
 - Interface computer: Interface computer for easy item requests (similar to ME storage terminal)
 - Master computer: A singular computer manages item requests and all slave computers (similar to ME controller)
-- Push computer: A computer to manage insertion into network (similar to ME interface)
+- Insert computer: A computer to manage insertion into network (similar to ME interface)
 
 ## Installation
 **format: REPO PROGRAM -> COMPUTER PROGRAM // Usage**\
