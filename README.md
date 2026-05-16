@@ -7,7 +7,7 @@ Create >6.0.0\
 CC: Tweaked >1.1
 
 ## Equipment
-There are 4 types of computers with different functions (using AE2 as comparison)
+There are 5 types of computers with different functions (using AE2 as comparison)
 - Slave computer: Connected to storage inventories (similar to ME drive and ME storage bus)
 - Request computer: Allows for remote request of packages using Create's logistics network (similar to ME interface)
 - Interface computer: Interface computer for easy item requests (similar to ME storage terminal)
