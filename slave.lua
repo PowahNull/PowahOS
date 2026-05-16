@@ -1,7 +1,8 @@
+local G = {}
 -- get modem
 peripheral.find("modem", rednet.open)
 -- loop max iterations to avoid exhaustion
-MAX_ITERATIONS = 10000
+G.MAX_ITERATIONS = 10000
 
 -- start rednet host
 do
@@ -17,7 +18,7 @@ do
     end)}
 
     if #storage_candidates > 0 then
-        STORAGE = storage_candidates[1]
+        G.STORAGE = storage_candidates[1]
         print("FOUND SUITABLE STORAGE INVENTORY, PROCEEDING")
     else
         error("NO SUITABLE STORAGE INVENTORY FOUND", 0)
@@ -31,7 +32,7 @@ do
     end)}
 
     if #chest_candidates > 0 then
-        CHEST = chest_candidates[1]
+        G.CHEST = chest_candidates[1]
         print("FOUND SUITABLE CHEST INVENTORY, PROCEEDING")
     else
         error("NO SUITABLE CHEST INVENTORY FOUND", 0)
@@ -45,12 +46,12 @@ function init()
         local wrapper = peripheral.wrap(message)
 
         if wrapper then
-            if PACKAGER then
-                PACKAGER = wrapper
+            if G.PACKAGER then
+                G.PACKAGER = wrapper
                 print("SLAVE PACKAGER REINITIALISED, PROCEEDING")
                 rednet.send(receive_id, "INIT_OK", "SLAVE_INIT_PROTOCOL")
             else
-                PACKAGER = wrapper
+                G.PACKAGER = wrapper
                 print("SLAVE INIT PACKAGER SUCCESS, PROCEEDING")
                 rednet.send(receive_id, "INIT_OK", "SLAVE_INIT_PROTOCOL")
             end
@@ -62,27 +63,27 @@ function init()
 end
 
 -- listen function (add to event queue)
-QUEUE = {}
+G.QUEUE = {}
 function listen()
     while true do
         -- rednet recieving
         local _, message = rednet.receive("SLAVE_PROTOCOL")
-        table.insert(QUEUE, message)
+        table.insert(G.QUEUE, message)
     end
 end
 
 -- pull a request from the queue and perform it
 function perform()
     while true do
-        if #QUEUE > 0 then
+        if #G.QUEUE > 0 then
             -- pull a request
-            local request = table.remove(QUEUE, 1)
+            local request = table.remove(G.QUEUE, 1)
             -- header is the destination, body is the payload
             local destination = request.header
             local data = request.body
 
             -- setAddress of packager
-            PACKAGER.setAddress(destination)
+            G.PACKAGER.setAddress(destination)
             
             local requests_todo = #data
             local requests_performed = 0
@@ -92,22 +93,22 @@ function perform()
                 local to_transfer = n
                 requests_performed = requests_performed + 1
                 -- limited loop
-                for i = 1, MAX_ITERATIONS do
+                for i = 1, G.MAX_ITERATIONS do
                     -- transfer if missing items
                     if to_transfer > 0 then
-                        local transfered = STORAGE.pushItems("right", slot, to_transfer)
+                        local transfered = G.STORAGE.pushItems("right", slot, to_transfer)
                         to_transfer = to_transfer - transfered
                     end
 
                     -- slots filled in the chest
-                    local filled = #CHEST.list()
+                    local filled = #G.CHEST.list()
 
                     -- perform packager push if more than 9 slots filled
                     if filled >= 9 then
                         -- the chest has enough items to push to a package
-                        for j = 1, MAX_ITERATIONS do
+                        for j = 1, G.MAX_ITERATIONS do
                             -- attempt package until chest has less than 9 items
-                            if PACKAGER.makePackage() then
+                            if G.PACKAGER.makePackage() then
                                 -- update chest content
                                 filled = filled - 9
                                 -- break if less than 9 items
@@ -121,9 +122,9 @@ function perform()
                     -- perform packager push if all requests performed and still items to transfer
                     if requests_todo == requests_performed and to_transfer == 0 and filled > 0 then
                         -- if all items have finished transfering
-                        for j = 1, MAX_ITERATIONS do
+                        for j = 1, G.MAX_ITERATIONS do
                             -- attempt package until chest is empty
-                            if PACKAGER.makePackage() then
+                            if G.PACKAGER.makePackage() then
                                 -- update chest content
                                 filled = filled - 9
                                 -- break if all items are transfered
