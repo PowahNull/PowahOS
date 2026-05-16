@@ -24,8 +24,9 @@ you should use wget or pastebin to copy paste code easily into a computer\
 
 master_init.lua -> /master_init.lua // Initialise master computer, establish connection and initialise slave computers\
 master_main.lua -> /master_main.lua // Main program of the computer\
-master_get.lua -> /master_request.lua // Module for accepting requests\
+master_get.lua -> /master_get.lua // Module for accepting requests\
 master_find.lua -> /master_find.lua // Module for finding items\
+master_push.lua -> /master_push.lua // Module for pushing items\
 master_list.lua -> /master_list.lua // Module for listing items\
 master_reboot.lua -> /master_reboot.lua // Simple script to reboot slave computers
 
