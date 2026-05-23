@@ -47,7 +47,7 @@ return {
                     container = data.value
                 elseif key == "secret" then
                     secret = (data.value == "true")
-                elseif key == priority then
+                elseif key == "priority" then
                     priority = tonumber(data.value) or 0
                 else
                     logger.warn(string.format("inventory.txt contained unexpected key '%s' at line %d for header %s", key, data.line, header))
