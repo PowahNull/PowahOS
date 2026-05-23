@@ -1,7 +1,7 @@
 local function timestamp(msg)
     local day = os.day()
     local time = textutils.formatTime(os.time(), true)
-    local format = string.format("Day %d; %s: %s", day, time, msg)
+    local format = string.format("Day %d %s | %s", day, time, msg)
     return format
 end
 
