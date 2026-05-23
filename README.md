@@ -10,6 +10,6 @@ CC: Tweaked >1.1
 There are 5 types of requests that can be accepted by a master computer
 - PUSH request // Push items into inventories
 - GET request // Pull items from inventories
-- LIST request // List items from all inventories from most to least
+- LIST request // List items from all inventories from a sorting order
 - FIND request // Find items from all inventories by matching against a word
 - CRAFT request // Manages crafting items
