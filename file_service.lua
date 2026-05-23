@@ -1,18 +1,21 @@
 local logger = require("logger")
 return {
     init_containers = function(CONTAINERS)
-        local file = fs.open("disk/inventory,txt", "r")
+        local PATH = "disk/inventory.txt"
+        local file = fs.open(PATH, "r")
 
         if type(file) == "nil" then
             logger.fatal_error("inventory.txt file not found")
         elseif type(file) == "string" then
             logger.fatal_error("inventory.txt could not be opened")
+        else
+            file.close()
         end
 
         local parsed_file = {}
         local current_header = ""
         local file_line = 1
-        for line in io.lines(file) do
+        for line in io.lines(PATH) do
             local header = string.match(line, "%[([^%s]+)%]")
             if header then
                 parsed_file[header] = {}
