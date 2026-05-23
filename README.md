@@ -7,7 +7,7 @@ Create >6.0.0\
 CC: Tweaked >1.1
 
 ## Equipment
-There are 5 types of processes with different functions all running on a master computer
+There are 5 types of requests that can be accepted by a master computer
 - PUSH request // Push items into inventories
 - GET request // Pull items from inventories
 - LIST request // List items from all inventories
