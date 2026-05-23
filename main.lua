@@ -21,6 +21,7 @@ for name, property in pairs(CONTAINERS) do
 end
 
 -- listen for requests
+peripheral.find("modem", rednet.open)
 local QUEUE = {}
 function listen()
     while true do
