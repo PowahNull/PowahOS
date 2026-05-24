@@ -1,6 +1,6 @@
 local logger = require("logger")
 return {
-    init_containers = function(CONTAINERS)
+    init_containers = function(PROPERTIES)
         local PATH = "disk/inventory.txt"
         local file = fs.open(PATH, "r")
 
@@ -58,7 +58,7 @@ return {
                 logger.error(string.format("inventory.txt missing field 'type' for header %s", header))
                 OK = false
             elseif type ~= "generic" and type ~= "drawer" then
-                logger.warn(string.format("inventory.txt field 'type' is invalid in header %s", header))
+                logger.error(string.format("inventory.txt field 'type' is invalid in header %s", header))
                 OK = false
             end
 
@@ -69,20 +69,20 @@ return {
                 logger.error(string.format("inventory.txt field 'container' in header %s is not registered", header))
                 OK = false
             elseif not peripheral.hasType(container, "inventory") then
-                logger.warn(string.format("inventory.txt field 'container' in header %s is not a valid container", header))
+                logger.error(string.format("inventory.txt field 'container' in header %s is not a valid container", header))
                 OK = false
             end
 
             if OK then
-                CONTAINERS[header] = {
+                PROPERTIES[header] = {
                     container = container,
                     type = type,
                     secret = secret,
                     priority = priority
                 }
-                logger.ok(string.format("registered container %s", header))
+                logger.ok(string.format("successfully registered container %s", header))
             else
-                logger.warn(string.format("ignored container %s", header))
+                logger.warn(string.format("ignored container %s for registration", header))
             end
         end
     end,
