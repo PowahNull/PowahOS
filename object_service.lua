@@ -13,7 +13,7 @@ module.new = function(object)
 
         if not object.secret then
             -- add to dictionary if object is public
-            local display_name = wrap.getItemDetail(slot).detail
+            local display_name = wrap.getItemDetail(slot).displayName
             if not dictionary[display_name] then dictionary[display_name] = {} end
             dictionary[display_name][item_tag] = true
         end
