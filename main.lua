@@ -1,3 +1,4 @@
+::start::
 local logger = require("logger")
 local file_service = require("file_service")
 local object_service = require("object_service")
@@ -9,15 +10,20 @@ local OBJECTS = {} -- stores objects
 
 -- initialise containers
 file_service.init_containers(PROPERTIES)
+logger.system("finished reading from file")
 for name, property in pairs(PROPERTIES) do
-    OBJECTS[name] = object_service.new({
+    local new_object, ok = object_service.new({
         name = name, -- name of object will be used as an abstraction layer in requests
         type = property.type, -- type of object is generic (chests) or drawer (storage drawers)
         secret = property.secret, -- is the object secret (cannot perform GET, LIST or FIND request on container)
         priority = property.priority, -- priority of insertion/extraction (highest -> lowest insert), (lowest -> highest extract)
         container = property.container, -- container peripheral name
     })
+    if ok then
+        OBJECTS[name] = new_object
+    end
 end
+logger.system("initialised container objects")
 
 -- listen for requests
 peripheral.find("modem", rednet.open)
@@ -36,6 +42,7 @@ end
 -- perform requests
 function perform()
     while true do
+        local internal_error = false
         -- pull an event
         local _, sender, message = os.pullEvent("request_event")
 
@@ -84,15 +91,23 @@ function perform()
                 end
 
                 -- push to inventory
-                failed_to_transfer = object_service.push(OBJECTS[source], OBJECTS[dest])
+                local ok
+                failed_to_transfer, ok = object_service.push(OBJECTS[source], OBJECTS[dest])
+                if not ok then
+                    internal_error = true
+                    goto continue
+                end
+                object_service.update(OBJECTS[source], OBJECTS[dest])
             else
                 -- push to main storage's highest priority and smallest amounts of items
                 local candidates = {}
                 for name, object in pairs(OBJECTS) do
                     if not object.secret then
+                        local size = 0
+                        for _, _ in pairs(object.content) do size = size + 1 end
                         table.insert(candidates, {
                             priority = object.priority,
-                            unique_items = #object.content,
+                            unique_items = size,
                             name = name
                         })
                     end
@@ -114,11 +129,19 @@ function perform()
                 end)
 
                 for _, property in ipairs(candidates) do
-                    failed_to_transfer = object_service.push(OBJECTS[source], OBJECTS[property.name])
+                    local ok
+                    failed_to_transfer, ok = object_service.push(OBJECTS[source], OBJECTS[property.name])
+                    if not ok then
+                        internal_error = true
+                        goto continue
+                    end
+                    object_service.update(OBJECTS[property.name])
+                    -- no transfer failed so break or else continue pushing
                     if failed_to_transfer <= 0 then
                         break
                     end
                 end
+                object_service.update(OBJECTS[source])
             end
 
             -- response
@@ -183,23 +206,17 @@ function perform()
                         break
                     elseif type(v.count) ~= "number" then
                         -- attempt to convert to a number
-                        local conversion = tonumber(v.count)
-                        if conversion then
-                            v.count = conversion
-                        else
-                            logger.error(string.format("GET request by %s failed due to incorrect count type: %s", sender, type(v.count)))
-                            rednet.send(sender, "INVALID COUNT TYPE", "STORAGE_RESPONSE_PROTOCOL")
-                            items_ok = false
-                            break
-                        end
+                        logger.error(string.format("GET request by %s failed due to incorrect count type: %s", sender, type(v.count)))
+                        rednet.send(sender, "INVALID COUNT TYPE", "STORAGE_RESPONSE_PROTOCOL")
+                        items_ok = false
+                        break
                     elseif v.count < 0 then 
-                        logger.error(string.format("GET request by %s failed due to negative count value: %s", sender, v.count))
+                        logger.error(string.format("GET request by %s failed due to negative count value: %d", sender, v.count))
                         rednet.send(sender, "NEGATIVE COUNT VALUE", "STORAGE_RESPONSE_PROTOCOL")
                         items_ok = false
                         break
                     else
-                        -- convert to integer
-                        v.count = v.count % 1
+                        v.count = math.floor(v.count)
                     end
                 end
 
@@ -218,7 +235,13 @@ function perform()
                     goto continue
                 else
                     -- get request for that specific container
-                    failed_to_transfer = object_service.get_multi(OBJECTS[source], OBJECTS[dest], items)
+                    local ok
+                    failed_to_transfer, ok = object_service.get_multi(OBJECTS[source], OBJECTS[dest], items)
+                    if not ok then
+                        internal_error = true
+                        goto continue
+                    end
+                    object_service.update(OBJECTS[source], OBJECTS[dest])
                 end
             else
                 -- get from main storage's lowest priority and least items
@@ -252,7 +275,12 @@ function perform()
                     local to_transfer = item.count
                     for _, property in ipairs(candidates) do
                         -- try to transfer all item of this type from this container
-                        to_transfer = object_service.get_single(OBJECTS[property.name], OBJECTS[dest], item.item, item.nbt, to_transfer)
+                        local ok
+                        to_transfer, ok = object_service.get_single(OBJECTS[property.name], OBJECTS[dest], item.item, item.nbt, to_transfer)
+                        if not ok then
+                            internal_error = true
+                            goto continue
+                        end
 
                         -- break if can no longer transfer or finished transfering
                         if to_transfer <= 0 then
@@ -264,6 +292,7 @@ function perform()
                         table.insert(failed_to_transfer, {item = item.item, nbt = item.nbt, count = to_transfer})
                     end
                 end
+                object_service.update(OBJECTS[dest])
             end
 
             -- response
@@ -287,6 +316,12 @@ function perform()
             -- ignore invalid header
         end
         ::continue::
+
+        if internal_error then
+            -- sort out internal error
+            -- perform full reload of data
+            break
+        end
     end
 end
 
