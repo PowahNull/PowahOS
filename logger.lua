@@ -13,24 +13,25 @@ return {
     error = function(message)
         term.setTextColor(colors.orange)
         print(timestamp(message))
-        term.setTextColor(colors.white)
     end,
 
     warn = function(message)
         term.setTextColor(colors.yellow)
         print(timestamp(message))
-        term.setTextColor(colors.white)
     end,
 
     ok = function(message)
         term.setTextColor(colors.green)
         print(timestamp(message))
-        term.setTextColor(colors.white)
     end,
 
     system = function(message)
         term.setTextColor(colors.blue)
         print(timestamp(message))
+    end,
+
+    default = function(message)
         term.setTextColor(colors.white)
+        print(timestamp(message))
     end
 }
