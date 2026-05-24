@@ -2,7 +2,6 @@
 local logger = require("logger")
 local file_service = require("file_service")
 local object_service = require("object_service")
-local mass_object_service = require("mass_container")
 
 local PROPERTIES = {} -- stores properties of objects
 local CRAFTING = {} -- stores crafting recipe
