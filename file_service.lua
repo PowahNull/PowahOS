@@ -35,10 +35,10 @@ module.init_objects = function(PROPERTIES)
     for header, values in pairs(parsed_file) do
         local OK = true
 
-        local type =  nil
         local container = nil
-        local secret = false
         local priority = 0
+        local secret = false
+        local type =  nil
 
         for key, data in pairs(values) do
             if key == "type" then
