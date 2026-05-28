@@ -1,8 +1,8 @@
 local logger = require("logger")
-local file_service = require("file_service")
-local object_service = require("object_service")
-local mass_object_service = require("mass_object_service")
-local dictionary_service = require("dictionary_service")
+local file = require("file")
+local object = require("object")
+local superobject = require("superobject")
+local dictionary = require("dictionary")
 logger.system("loaded all modules")
 
 local MAX_QUEUE_SIZE = 512
@@ -11,8 +11,8 @@ local OBJECTS = {} -- stores objects
 local DICTIONARY = {} -- stores specific nbt
 
 -- initialise containers
-file_service.init_objects(OBJECTS)
-file_service.init_dictionary(OBJECTS)
+file.init_objects(OBJECTS)
+file.init_dictionary(OBJECTS)
 logger.system("finished reading from file")
 peripheral.find("modem", rednet.open)
 logger.system("connected to rednet")
@@ -72,17 +72,17 @@ local switch = {
 
             -- push to inventory
             local ok
-            not_moved, ok = object_service.push(OBJECTS[source], OBJECTS[dest])
+            not_moved, ok = object.push(OBJECTS[source], OBJECTS[dest])
             if ok ~= "CALL_OK" then
                 return ok
             end
         else
             -- push to main storage's highest priority and randomise
-            local candidates = mass_object_service.shuffle(OBJECTS)
+            local candidates = superobject.shuffle(OBJECTS)
 
             for _, property in ipairs(candidates) do
                 local ok
-                not_moved, ok = object_service.push(OBJECTS[source], OBJECTS[property.name])
+                not_moved, ok = object.push(OBJECTS[source], OBJECTS[property.name])
                 if ok ~= "CALL_OK" then
                     return ok
                 end
@@ -133,7 +133,7 @@ local switch = {
                 ...
             }
 
-            if nbt is missing then it is assumed to be "" (no nbt)
+            if nbt is missing then match any nbt
         ]]
 
         if not items then
@@ -182,19 +182,19 @@ local switch = {
             else
                 -- get request for that specific container
                 local ok
-                not_moved, ok = object_service.get(OBJECTS[source], OBJECTS[dest], items)
+                not_moved, ok = object.get(OBJECTS[source], OBJECTS[dest], items)
                 if ok ~= "CALL_OK" then
                     return ok
                 end
             end
         else
             -- get from main storage's highest priority and randomise
-            local candidates = mass_object_service.shuffle(OBJECTS)
+            local candidates = superobject.shuffle(OBJECTS)
             local left_to_move = items
             for _, property in ipairs(candidates) do
                 -- try to transfer all item of this type from this container
                 local ok
-                left_to_move, ok = object_service.get(OBJECTS[property.name], OBJECTS[dest], left_to_move)
+                left_to_move, ok = object.get(OBJECTS[property.name], OBJECTS[dest], left_to_move)
                 if ok ~= "CALL_OK" then
                     return ok
                 end
@@ -226,11 +226,11 @@ local switch = {
         local contents = {}
         for name, property in pairs(OBJECTS) do
             if not property.secret then
-                contents[name] = object_service.content(OBJECTS[name])
+                contents[name] = object.content(OBJECTS[name])
             end
         end
 
-        local merged = mass_object_service.merge_items(contents)
+        local merged = superobject.merge_items(contents)
 
         local to_sort = {}
         local slot = 1
@@ -276,11 +276,11 @@ local switch = {
         local contents = {}
         for name, property in pairs(OBJECTS) do
             if not property.secret then
-                contents[name] = object_service.match(OBJECTS[name], mod_search, tag_search)
+                contents[name] = object.match(OBJECTS[name], mod_search, tag_search)
             end
         end
 
-        local all_items = mass_object_service.merge_items(contents)
+        local all_items = superobject.merge_items(contents)
 
         -- mass send
         mass_send(all_items, sender, "STORAGE_RESPONSE_PROTOCOL")
