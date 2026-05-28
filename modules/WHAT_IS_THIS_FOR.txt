@@ -1,1 +1,0 @@
-this folder contain modules which support main programs and provide some organisation
