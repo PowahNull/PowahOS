@@ -1,1 +1,0 @@
-this file contains the main program to run on computers, and to be installed alongside modules to function properly
