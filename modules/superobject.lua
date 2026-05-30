@@ -5,8 +5,31 @@ module.merge_items = function(array)
     local main = {}
     for _, content in pairs(array) do
         for item_tag, count in pairs(content) do
-            if not main[item_tag] then main[item_tag] = 0 end
-            main[item_tag] = main[item_tag] + count
+            main[item_tag] = (main[item_tag] or 0) + count
+        end
+    end
+
+    return main
+end
+
+module.merge_items_nbt = function(array)
+    -- merges content_item or match_tag and match_mod tables
+    local main = {}
+    for _, content in pairs(array) do
+        for _, value in pairs(content) do
+            local combine = string.format("%s<%s>", value.item, value.nbt)
+            if not main[combine] then
+                main[combine] = {
+                    display = value.display,
+                    item = value.item,
+                    nbt = value.nbt,
+                    count = value.count,
+                    -- shallow clone
+                    extra = {table.unpack(value.extra)}
+                }
+            else
+                main[combine].count = main[combine].count + value.count
+            end
         end
     end
 
