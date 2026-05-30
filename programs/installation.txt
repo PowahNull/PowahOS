@@ -1,0 +1,13 @@
+this folder contain programs to be run primarily on computers,
+
+1. main.lua
+install main.lua on a "master" computer, this computer will receive all storage requests perform them.
+
+2. worker.lua
+install worker.lua on a "worker" computer. The sole purpose of the "worker" is to perform parallel tasks
+quickly and respond to the "master" computer. It is advised to install worker.lua as startup.lua so the script
+runs immediately when the worker computer boots.
+
+3. crafter.lua
+install crafter.lua on a "crafter" computer. This crafter can manage one crafting task as a time, similar to an
+AE2 crafting core. Each crafter must be assigned a storage buffer to perform crafting request.
