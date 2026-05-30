@@ -79,29 +79,9 @@ module.init_objects = function(PROPERTIES)
                 name = header,
                 type = type,
             }
-            logger.ok(string.format("header %s registered", header))
+            logger.ok(string.format("registered %s", header))
         else
-            logger.warn(string.format("header %s failed to register", header))
-        end
-    end
-end
-
-module.init_dictionary = function(DICTIONARY)
-    local PATH = "disk2/dictionary.txt"
-    local file = fs.open(PATH, "r")
-
-    if type(file) == "nil" then
-        logger.fatal_error("dictionary.txt not found")
-    elseif type(file) == "string" then
-        logger.fatal_error("dictionary.txt could not be opened")
-    else
-        file.close()
-    end
-
-    for line in io.lines(PATH) do
-        -- the nightmare regex
-        for registry, name in string.gmatch(line, "%s*([^%s]+)%s*=%s*([^%s]+)%s*") do
-            DICTIONARY[registry] = name
+            logger.warn(string.format("failed to registered %s", header))
         end
     end
 end
