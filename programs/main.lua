@@ -1,41 +1,25 @@
 local logger = require("logger")
+local typecheck = require("typecheck")
 local file = require("file")
 local object = require("object")
 local superobject = require("superobject")
-local dictionary = require("dictionary")
+local manager = require("manager")
 logger.system("loaded all modules")
 
 local MAX_QUEUE_SIZE = 512
 local CRAFTING = {} -- stores crafting recipe
 local OBJECTS = {} -- stores objects
-local DICTIONARY = {} -- stores specific nbt
 
 -- initialise containers
 file.init_objects(OBJECTS)
-file.init_dictionary(OBJECTS)
 logger.system("finished reading from file")
 peripheral.find("modem", rednet.open)
 logger.system("connected to rednet")
-
--- listen for requests
-local QUEUE = {}
-
-function mass_send(array, sender, protocol)
-    -- send 512 elements at a time to recipient (break if no more element to send)
-    for i = 1, #array, 512 do
-        local section = {}
-        for j = 1, 512 do
-            local value = array[i + j - 1]
-            if value then
-                section[j] = value
-            else
-                break
-            end
-        end
-        rednet.send(sender, section, protocol)
-        sleep(0.05)
-    end
+local amount_of_workers = manager.init(OBJECTS)
+if amount_of_workers <= 0 then
+    logger.fatal_error("no workers found in system")
 end
+logger.system("initialised workers")
 
 -- to be added: superfind, craft
 local switch = {
@@ -44,37 +28,27 @@ local switch = {
         local source = body[1]
         local dest = body[2]
 
-        if not source then
-            logger.warn(string.format("PUSH by #%d is missing source information", sender))
-            rednet.send(sender, "MISSING SOURCE", "STORAGE_RESPONSE_PROTOCOL")
-            return "CALL_OK"
-        elseif type(source) ~= "string" then
-            logger.warn(string.format("PUSH by #%d source data type '%s' is invalid", sender, type(source)))
-            rednet.send(sender, "INVALID SOURCE TYPE", "STORAGE_RESPONSE_PROTOCOL")
-            return "CALL_OK"
-        elseif not OBJECTS[source] then
-            logger.error(string.format("PUSH by #%d source is unknown", sender))
-            rednet.send(sender, "INVALID SOURCE", "STORAGE_RESPONSE_PROTOCOL")
+        local source_ok = typecheck.is_object(OBJECTS, source, "MISSING SOURCE", "BAD SOURCE TYPE", "UNKNOWN SOURCE", "OK")
+        if source_ok ~= "OK" then
+            logger.warn(string.format("PUSH by #%d failed with error ", sender, source_ok))
+            rednet.send(sender, source_ok, "STORAGE_RESPONSE_PROTOCOL")
             return "CALL_OK"
         end
 
         local not_moved
         if dest then
-            if type(dest) ~= "string" then
-                logger.warn(string.format("PUSH by #%d destination data type '%s' is invalid", sender, type(dest)))
-                rednet.send(sender, "INVALID DESTINATION TYPE", "STORAGE_RESPONSE_PROTOCOL")
+            local dest_ok = typecheck.is_object(OBJECTS, dest, "MISSING DESTINATION", "BAD DESTINATION TYPE", "UNKNOWN DESTINATION", "OK")
+            if dest_ok == "OK" then
+                -- push to inventory
+                local ok
+                not_moved, ok = object.push(OBJECTS[source], OBJECTS[dest])
+                if ok ~= "CALL_OK" then
+                    return ok
+                end
+            else
+                logger.warn(string.format("PUSH by #%d failed with error ", sender, dest_ok))
+                rednet.send(sender, dest_ok, "STORAGE_RESPONSE_PROTOCOL")
                 return "CALL_OK"
-            elseif not OBJECTS[dest] then
-                logger.error(string.format("PUSH by #%d destination is unknown", sender))
-                rednet.send(sender, "INVALID DESTINATION", "STORAGE_RESPONSE_PROTOCOL")
-                return "CALL_OK"
-            end
-
-            -- push to inventory
-            local ok
-            not_moved, ok = object.push(OBJECTS[source], OBJECTS[dest])
-            if ok ~= "CALL_OK" then
-                return ok
             end
         else
             -- push to main storage's highest priority and randomise
@@ -110,17 +84,10 @@ local switch = {
         local dest = body[2] -- destination to push to
         local source = body[3] -- source to pull from
 
-        if not dest then
-            logger.warn(string.format("GET by #%d is missing destination information", sender))
-            rednet.send(sender, "MISSING DESTINATION", "STORAGE_RESPONSE_PROTOCOL")
-            return "CALL_OK"
-        elseif type(dest) ~= "string" then
-            logger.warn(string.format("GET by #%d destination data type '%s' is invalid", sender, type(dest)))
-            rednet.send(sender, "INVALID DESTINATION TYPE", "STORAGE_RESPONSE_PROTOCOL")
-            return "CALL_OK"
-        elseif not OBJECTS[dest] then
-            logger.error(string.format("GET by #%d destination is unknown", sender))
-            rednet.send(sender, "INVALID DESTINATION", "STORAGE_RESPONSE_PROTOCOL")
+        local dest_ok = typecheck.is_object(OBJECTS, dest, "MISSING DESTINATION", "BAD DESTINATION TYPE", "UNKNOWN DESTINATION", "OK")
+        if dest_ok ~= "OK" then
+            logger.warn(string.format("GET by #%d failed with error ", sender, dest_ok))
+            rednet.send(sender, dest_ok, "STORAGE_RESPONSE_PROTOCOL")
             return "CALL_OK"
         end
 
@@ -136,56 +103,27 @@ local switch = {
             if nbt is missing then match any nbt
         ]]
 
-        if not items then
-            logger.warn(string.format("GET by #%d is missing item(s) information", sender))
-            rednet.send(sender, "MISSING ITEM", "STORAGE_RESPONSE_PROTOCOL")
+        local check_ok = typecheck.is_items(items, "MISSING ITEMS", "BAD ITEM TYPE", "MISSING ITEM DATA", "BAD ITEM DATA TYPE", "OK")
+        if check_ok ~= "OK" then
+            logger.warn(string.format("GET by #%d failed with error ", sender, check_ok))
+            rednet.send(sender, check_ok, "STORAGE_RESPONSE_PROTOCOL")
             return "CALL_OK"
-        elseif type(items) ~= "table" then
-            logger.warn(string.format("GET by #%d item(s) data type '%s' is invalid", sender, type(dest)))
-            rednet.send(sender, "INVALID ITEM TYPE", "STORAGE_RESPONSE_PROTOCOL")
-            return "CALL_OK"
-        else
-            for _, v in pairs(items) do
-                if not (v.item and v.count) then
-                    logger.warn(string.format("GET by #%d is missing data information", sender))
-                    rednet.send(sender, "MISSING DATA", "STORAGE_RESPONSE_PROTOCOL")
-                    return "CALL_OK"
-                elseif type(v.item) ~= "string" then
-                    logger.warn(string.format("GET by #%d data type '%s' is invalid", sender, type(v.item)))
-                    rednet.send(sender, "INVALID DATA TYPE", "STORAGE_RESPONSE_PROTOCOL")
-                    return "CALL_OK"
-                elseif type(v.count) ~= "number" then
-                    -- attempt to convert to a number
-                    logger.warn(string.format("GET by #%d count type '%s' is invalid", sender, type(v.count)))
-                    rednet.send(sender, "INVALID COUNT TYPE", "STORAGE_RESPONSE_PROTOCOL")
-                    return "CALL_OK"
-                elseif v.count < 0 then 
-                    logger.warn(string.format("GET by #%d count value %d is invalid", sender, v.count))
-                    rednet.send(sender, "INVALID COUNT VALUE", "STORAGE_RESPONSE_PROTOCOL")
-                    return "CALL_OK"
-                else
-                    v.count = math.floor(v.count)
-                end
-            end
         end
 
         local not_moved = {}
         if source then
-            if type(source) ~= "string" then
-                logger.error(string.format("GET by #%d data type '%s' is invalid", sender, type(source)))
-                rednet.send(sender, "INVALID SOURCE TYPE", "STORAGE_RESPONSE_PROTOCOL")
+            -- get request for that specific container
+            local source_ok = typecheck.is_object(OBJECTS, source, "MISSING SOURCE", "BAD SOURCE TYPE", "UNKNOWN SOURCE", "OK")
+            if source_ok ~= "OK" then
+                logger.warn(string.format("GET by #%d failed with error ", sender, source_ok))
+                rednet.send(sender, source_ok, "STORAGE_RESPONSE_PROTOCOL")
                 return "CALL_OK"
-            elseif not OBJECTS[source] then
-                logger.error(string.format("GET by #%d source is unknown", sender))
-                rednet.send(sender, "INVALID SOURCE", "STORAGE_RESPONSE_PROTOCOL")
-                return "CALL_OK"
-            else
-                -- get request for that specific container
-                local ok
-                not_moved, ok = object.get(OBJECTS[source], OBJECTS[dest], items)
-                if ok ~= "CALL_OK" then
-                    return ok
-                end
+            end
+
+            local ok
+            not_moved, ok = object.get(OBJECTS[source], OBJECTS[dest], items)
+            if ok ~= "CALL_OK" then
+                return ok
             end
         else
             -- get from main storage's highest priority and randomise
@@ -221,10 +159,23 @@ local switch = {
         return "CALL_OK"
     end,
 
-    LIST = function(sender, _)
-        -- list all items in inventory, without nbt and return its amounts
+    LIST = function(sender, body)
+        -- list all items without nbt
+        local to_list = {}
+        if #body > 0 then
+            -- list from specific inventories if inventory is valid
+            for _, v in pairs(body) do
+                local source = OBJECTS[v]
+                if source then
+                    to_list[v] = OBJECTS[v]
+                end
+            end
+        else
+            to_list = OBJECTS
+        end
+
         local contents = {}
-        for name, property in pairs(OBJECTS) do
+        for name, property in pairs(to_list) do
             if not property.secret then
                 contents[name] = object.content(OBJECTS[name])
             end
@@ -244,28 +195,24 @@ local switch = {
         end)
 
         -- mass send
-        mass_send(to_sort, sender, "STORAGE_RESPONSE_PROTOCOL")
+        rednet.send(sender, to_sort, "STORAGE_RESPONSE_PROTOCOL")
 
         logger.ok(string.format("LIST by #%d succeeded", sender))
         return "CALL_OK"
     end,
 
     FIND = function(sender, body)
-        -- find an item from a searchword, without nbt, and return its amount
-        local search = body
-        if not search then
-            logger.warn(string.format("FIND by #%d is missing searchword(s) information", sender))
-            rednet.send(sender, "MISSING SOURCE", "STORAGE_RESPONSE_PROTOCOL")
-            return "CALL_OK"
-        elseif type(search) ~= "string" then
-            logger.warn(string.format("FIND by #%d searchword(s) data type '%s' is invalid", sender, type(search)))
-            rednet.send(sender, "INVALID SOURCE TYPE", "STORAGE_RESPONSE_PROTOCOL")
+        -- find an item from a searchword without nbt
+        local search_ok = typecheck.is_string(body[1], "MISSING SEARCHWORD", "BAD SEARCHWORD TYPE", "OK")
+        if search_ok ~= "OK" then
+            logger.warn(string.format("FIND by #%d failed with error ", sender, search_ok))
+            rednet.send(sender, search_ok, "STORAGE_RESPONSE_PROTOCOL")
             return "CALL_OK"
         end
 
         local mod_search = {}
         local tag_search = {}
-        for word in search:gmatch("%S+") do
+        for word in body[1]:gmatch("%S+") do
             if string.find(word, "@") then
                 table.insert(mod_search, string.lower(string.gsub(word, "@", "")))
             else
@@ -273,32 +220,143 @@ local switch = {
             end
         end
 
+        local objects_to_find = {}
+        if body[2] then
+            if type(body[2]) == "table" then
+                -- list from specific inventories if inventory is valid
+                for _, v in pairs(body[2]) do
+                    local source = OBJECTS[v]
+                    if source then
+                        objects_to_find[v] = OBJECTS[v]
+                    end
+                end
+            end
+        else
+            objects_to_find = OBJECTS
+        end
+
         local contents = {}
-        for name, property in pairs(OBJECTS) do
+        for name, property in pairs(objects_to_find) do
             if not property.secret then
                 contents[name] = object.match(OBJECTS[name], mod_search, tag_search)
             end
         end
 
-        local all_items = superobject.merge_items(contents)
+        local merged = superobject.merge_items(contents)
+
+        local to_sort = {}
+        local slot = 1
+        for item, count in pairs(merged) do
+            to_sort[slot] = {item = item, count = count}
+            slot = slot + 1
+        end
+
+        table.sort(to_sort, function(a, b)
+            return a.count > b.count
+        end)
 
         -- mass send
-        mass_send(all_items, sender, "STORAGE_RESPONSE_PROTOCOL")
+        rednet.send(sender, to_sort, "STORAGE_RESPONSE_PROTOCOL")
 
         logger.ok(string.format("FIND by #%d succeeded", sender))
         return "CALL_OK"
     end,
 
-    SUPERFIND = function(sender, body)
-        -- find an item from a searchword, with nbt and dictionary and return its amounts
+    SUPERLIST = function(sender, body)
+        -- list all items with nbt
+        local to_list = {}
+        if #body > 0 then
+            -- list from specific inventories if inventory is valid
+            for _, v in pairs(body) do
+                local source = OBJECTS[v]
+                if source then
+                    to_list[v] = OBJECTS[v]
+                end
+            end
+        else
+            to_list = OBJECTS
+        end
+
+        local main_pool = manager.list(to_list)
+        local merged = superobject.merge_items_nbt(main_pool)
+
+        local sort = {}
+        local slot = 1
+        for _, details in pairs(merged) do
+            sort[slot] = details
+            slot = slot + 1
+        end
+
+        table.sort(sort, function(a, b)
+            return a.count > b.count
+        end)
+
+        -- mass send
+        rednet.send(sender, sort, "STORAGE_RESPONSE_PROTOCOL")
+
+        logger.ok(string.format("SUPERLIST by #%d succeeded", sender))
+        return "CALL_OK"
     end,
 
-    UPDATE = function(sender, body)
-        -- update dictionary
+    SUPERFIND = function(sender, body)
+        -- find an item from a searchword with nbt and display name
+        local search_ok = typecheck.is_string(body[1], "MISSING SEARCHWORD", "BAD SEARCHWORD TYPE", "OK")
+        if search_ok ~= "OK" then
+            logger.warn(string.format("FIND by #%d failed with error ", sender, search_ok))
+            rednet.send(sender, search_ok, "STORAGE_RESPONSE_PROTOCOL")
+            return "CALL_OK"
+        end
+
+        local search = {}
+        for word in body[1]:gmatch("%w+") do
+            table.insert(search, string.lower(word))
+        end
+
+        local objects = {}
+        if body[2] then
+            if type(body[2]) == "table" then
+                -- list from specific inventories if inventory is valid
+                for _, v in pairs(body[2]) do
+                    local source = OBJECTS[v]
+                    if source then
+                        objects[v] = OBJECTS[v]
+                    end
+                end
+            end
+        else
+            objects = OBJECTS
+        end
+
+        local main_pool = manager.find(objects, search)
+        local merged = superobject.merge_items_nbt(main_pool)
+
+        local sort = {}
+        local slot = 1
+        for _, details in pairs(merged) do
+            sort[slot] = details
+            slot = slot + 1
+        end
+
+        table.sort(sort, function(a, b)
+            return a.count > b.count
+        end)
+
+        -- mass send
+        rednet.send(sender, sort, "STORAGE_RESPONSE_PROTOCOL")
+
+        logger.ok(string.format("SUPERFIND by #%d succeeded", sender))
+        return "CALL_OK"
+    end,
+
+    CRAFT = function(sender, body)
+        -- dispatch a crafting request to a crafting cpu
     end
 }
 
-function listen()
+-- listen for requests
+local QUEUE = {}
+
+local function listen()
     while true do
         -- rednet recieving
         local sender, message = rednet.receive("STORAGE_REQUEST_PROTOCOL")
@@ -312,7 +370,7 @@ function listen()
     end
 end
 
-function perform()
+local function perform()
     while true do
         if #QUEUE > 0 then
             -- ignore bad requests
