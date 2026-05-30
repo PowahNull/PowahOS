@@ -1,32 +1,7 @@
 local module = {}
 
-module.content_nbt = function(object)
-    -- get contents of an object with nbt
-    local wrap_ok, wrap = pcall(peripheral.wrap, object.container)
-    if not wrap_ok then return {}, "CONTENT_NBT_WRAP_ERROR" end
-    local list_ok, list = pcall(wrap.list)
-    if not list_ok then return {}, "CONTENT_NBT_LIST_ERROR" end
-
-    local content = {}
-
-    for _, item in pairs(list) do
-        local item_count = item.count
-        local item_tag = item.name
-        local item_nbt = item.nbt or ""
-
-        local compact = string.format("%s<%s>", item_tag, item_nbt)
-
-        -- add items to content
-        if not content[compact] then content[compact] = 0 end
-        content[compact] = content[compact] + item_count
-    end
-
-    return content, "CALL_OK"
-end
-
 module.content = function(object)
-    -- get contents of an object ignoring nbt
-    -- return content compatable with match
+    -- return contents of an object ignoring nbt and their amount
     local wrap_ok, wrap = pcall(peripheral.wrap, object.container)
     if not wrap_ok then return {}, "CONTENT_ITEM_WRAP_ERROR" end
     local list_ok, list = pcall(wrap.list)
@@ -47,7 +22,7 @@ module.content = function(object)
 end
 
 module.fill = function(object)
-    -- get fill of an object
+    -- get fill slots of an object
     local wrap_ok, wrap = pcall(peripheral.wrap, object.container)
     if not wrap_ok then return -1, "FILL_WRAP_ERROR" end
     local list_ok, list = pcall(wrap.list)
@@ -87,13 +62,13 @@ module.get = function(from_object, to_object, transfer)
     if not list_ok then return {}, "GET_LIST_ERROR" end
 
     local to_move = {}
-    local orders = #transfer
+    local orders = 0
     for _, data in pairs(transfer) do
         local item_tag = data.item
         local item_nbt = data.nbt or ""
 
         if not to_move[item_tag] then to_move[item_tag] = {} end
-        if not to_move[item_tag][item_nbt] then to_move[item_tag][item_nbt] = 0 end
+        if not to_move[item_tag][item_nbt] then to_move[item_tag][item_nbt] = 0; orders = orders + 1 end
         to_move[item_tag][item_nbt] = to_move[item_tag][item_nbt] + data.count
     end
 
@@ -101,14 +76,31 @@ module.get = function(from_object, to_object, transfer)
         local item_tag = item.name
         local item_nbt = item.nbt or ""
 
-        if to_move[item_tag] and to_move[item_tag][item_nbt] and to_move[item_tag][item_nbt] > 0 then
-            -- item is correct
-            local push_ok, moved = pcall(wrap.pushItems, to_object.container, slot, to_move[item_tag][item_nbt])
-            if not push_ok then return {}, "GET_MOVE_ERROR" end
-            
-            to_move[item_tag][item_nbt] = math.max(0, to_move[item_tag][item_nbt] - moved)
-            if to_move[item_tag][item_nbt] <= 0 then
-                orders = orders - 1
+        -- match any if nbt is missing
+        if to_move[item_tag] then
+            if to_move[item_tag][""] then
+                if to_move[item_tag][""] > 0 then
+                    -- item is correct
+                    local push_ok, moved = pcall(wrap.pushItems, to_object.container, slot, to_move[item_tag][""])
+                    if not push_ok then return {}, "GET_MOVE_ERROR" end
+                    
+                    to_move[item_tag][""] = math.max(0, to_move[item_tag][""] - moved)
+                    if to_move[item_tag][""] <= 0 then
+                        orders = orders - 1
+                    end
+                end
+            elseif to_move[item_tag][item_nbt] then
+                -- item is correct
+                if to_move[item_tag][item_nbt] > 0 then
+                    -- item is correct
+                    local push_ok, moved = pcall(wrap.pushItems, to_object.container, slot, to_move[item_tag][item_nbt])
+                    if not push_ok then return {}, "GET_MOVE_ERROR" end
+                    
+                    to_move[item_tag][item_nbt] = math.max(0, to_move[item_tag][item_nbt] - moved)
+                    if to_move[item_tag][item_nbt] <= 0 then
+                        orders = orders - 1
+                    end
+                end
             end
         end
 
@@ -180,10 +172,6 @@ module.match = function(object, mod_search, tag_search)
         end
     end
     return candidates, "CALL_OK"
-end
-
-module.match_nbt = function(object, search)
-    
 end
 
 return module
